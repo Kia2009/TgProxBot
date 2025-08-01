@@ -32,8 +32,14 @@ def get_configs(limit=5):
     if not supabase:
         return []
     try:
-        response = supabase.table('configs').select('config').limit(limit).execute()
-        return [row['config'] for row in response.data if row['config']]
+        response = supabase.table('configs').select('*').limit(limit).execute()
+        configs = []
+        for row in response.data:
+            if 'config' in row and row['config']:
+                configs.append(row['config'])
+            elif 'url' in row and row['url']:
+                configs.append(row['url'])
+        return configs
     except Exception as e:
         print(f"Error fetching configs: {e}")
         return []

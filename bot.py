@@ -75,8 +75,8 @@ def format_proxy_links(proxies):
     if not proxies:
         return "No working proxies found."
     message = "🛡️ Proxies:\n"
-    for i, proxy in enumerate(proxies[:10], 1):
-        message += f"[Proxy {i}]({proxy})\n"
+    for proxy in proxies[:10]:
+        message += f"[پروکسی مهندس علایی]({proxy})\n"
     return message
 
 # Function to collect and send proxies/configs
@@ -304,13 +304,13 @@ def logs_command(message):
 def main():
     logger.info("Bot started")
     
-    # Send initial message to all groups
-    send_updates()
-    
     global scheduler_started
     scheduler.add_job(send_updates, "interval", minutes=30)
     threading.Thread(target=scheduler.start, daemon=True).start()
     scheduler_started = True
+    
+    # Send initial message to all groups
+    send_updates()
     
     try:
         bot.polling(none_stop=True, interval=1, timeout=20)
