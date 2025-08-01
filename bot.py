@@ -60,9 +60,12 @@ def write_settings(data):
 def format_configs(configs):
     if not configs:
         return "No working configs found."
-    # Take only first config to avoid URI too large error
+    # Take only first config and truncate to avoid text too long error
     config = configs[0] if configs else ""
     if config:
+        # Truncate config if too long (Telegram limit ~4096 chars)
+        if len(config) > 3000:
+            config = config[:3000] + "..."
         return f"🔗 Config: `{config}`"
     return "No working configs found."
 
@@ -78,7 +81,7 @@ def format_proxy_links(proxies):
 # Function to collect and send proxies/configs
 def send_updates():
     try:
-        proxies = get_proxies(10)  # 10 proxy links for group
+        proxies = get_proxies(5)  # 5 proxy links for group
         configs = get_configs(1)   # 1 config for group
         proxy_message = format_proxy_links(proxies)
         config_message = format_configs(configs)
