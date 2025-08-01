@@ -56,19 +56,15 @@ def write_settings(data):
     with open("setting.json", "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, sort_keys=True)
 
-# Function to format configs (200 configs per link)
+# Function to format configs (single config link)
 def format_configs(configs):
     if not configs:
         return "No working configs found."
-    n = 200
-    chunks = [configs[i:i + n] for i in range(0, len(configs), n)]
-    messages = []
-    for i, chunk in enumerate(chunks, 1):
-        text = "\n".join(chunk)
-        text_b64 = b64encode(text.encode("utf-8")).decode("utf-8")
-        url = f"hiddify://import/{text_b64}"
-        messages.append(f"🔗 Config Link No.{i}: `{url}`")
-    return "\n".join(messages)
+    # Take only first config to avoid URI too large error
+    config = configs[0] if configs else ""
+    if config:
+        return f"🔗 Config: `{config}`"
+    return "No working configs found."
 
 # Function to format proxy links
 def format_proxy_links(proxies):
@@ -83,7 +79,7 @@ def format_proxy_links(proxies):
 def send_updates():
     try:
         proxies = get_proxies(10)  # 10 proxy links for group
-        configs = get_configs(5)   # 5 configs for group
+        configs = get_configs(1)   # 1 config for group
         proxy_message = format_proxy_links(proxies)
         config_message = format_configs(configs)
         current_time = (datetime.now() + timedelta(hours=4)).strftime("%b-%d %H:%M")
@@ -175,7 +171,7 @@ def get_proxy_callback(call):
 
 def get_config_callback(call):
     try:
-        configs = get_configs(5)
+        configs = get_configs(1)
         config_message = format_configs(configs)
         bot.edit_message_text(config_message, call.message.chat.id, call.message.message_id, parse_mode='Markdown', reply_markup=types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("🔙 Back", callback_data="back_main")))
     except Exception as e:
@@ -248,7 +244,7 @@ def list_channels_callback(call):
 @bot.message_handler(commands=['getconfig'])
 def get_config_command(message):
     try:
-        configs = get_configs(5)
+        configs = get_configs(1)
         config_message = format_configs(configs)
         bot.reply_to(message, config_message, parse_mode='Markdown')
         logger.info(f"User {message.from_user.id} requested configs in {message.chat.type}")
