@@ -3,6 +3,7 @@ name = "telegram-proxy-bot"
 version = "0.1.0"
 description = "A Telegram bot to collect and send proxies and configs with admin dashboard"
 authors = ["Your Name <your.email@example.com>"]
+package-mode = false
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
