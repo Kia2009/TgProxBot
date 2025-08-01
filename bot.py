@@ -5,7 +5,7 @@ from logging.handlers import RotatingFileHandler
 import telebot # type: ignore
 from telebot import types # type: ignore
 from apscheduler.schedulers.blocking import BlockingScheduler # type: ignore
-from supabase_db import get_proxies, get_configs
+from supabase_db import get_proxies
 from base64 import b64encode
 from datetime import datetime, timedelta
 import threading
@@ -56,42 +56,28 @@ def write_settings(data):
     with open("setting.json", "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, sort_keys=True)
 
-# Function to format configs (single config link)
-def format_configs(configs):
-    if not configs:
-        return "No working configs found."
-    # Take only first config - no truncation needed for separate message
-    config = configs[0] if configs else ""
-    if config:
-        return f"🔗 Config:\n`{config}`"
-    return "No working configs found."
+
 
 # Function to format proxy links
 def format_proxy_links(proxies):
     if not proxies:
         return "No working proxies found."
     message = "🛡️ Proxies:\n"
-    for proxy in proxies[:10]:
+    for proxy in proxies[:20]:
         message += f"[پروکسی مهندس علایی]({proxy})\n"
     return message
 
-# Function to collect and send proxies/configs
+# Function to collect and send proxies
 def send_updates():
     try:
-        proxies = get_proxies(5)  # 5 proxy links for group
-        configs = get_configs(1)   # 1 config for group
+        proxies = get_proxies(20)  # 20 proxy links for group
         proxy_message = format_proxy_links(proxies)
         current_time = (datetime.now() + timedelta(hours=4)).strftime("%b-%d %H:%M")
         proxy_full_message = f"📢 Update {current_time}\n\n{proxy_message}"
         
         for group_id in GROUP_CHAT_IDS:
             try:
-                # Send proxies first
                 bot.send_message(chat_id=group_id, text=proxy_full_message, parse_mode='Markdown')
-                # Send config separately if available
-                if configs and configs[0]:
-                    config_message = f"🔗 Config:\n`{configs[0]}`"
-                    bot.send_message(chat_id=group_id, text=config_message, parse_mode='Markdown')
             except Exception as msg_error:
                 logger.error(f"Failed to send to group {group_id}: {msg_error}")
                 for admin_id in ADMIN_IDS:
@@ -100,7 +86,7 @@ def send_updates():
                         break
                     except:
                         continue
-        logger.info(f"Sent update at {current_time} with {len(proxies)} proxies and {len(configs)} configs")
+        logger.info(f"Sent update at {current_time} with {len(proxies)} proxies")
     except Exception as e:
         logger.error(f"Error sending update: {e}")
 
@@ -163,7 +149,7 @@ def callback_query(call):
 
 def get_proxy_callback(call):
     try:
-        proxies = get_proxies(50)
+        proxies = get_proxies(20)
         if not proxies:
             bot.answer_callback_query(call.id, "No working proxies found.")
             return
@@ -175,12 +161,8 @@ def get_proxy_callback(call):
         bot.answer_callback_query(call.id, "Error getting proxies")
 
 def get_config_callback(call):
-    try:
-        configs = get_configs(1)
-        config_message = format_configs(configs)
-        bot.edit_message_text(config_message, call.message.chat.id, call.message.message_id, parse_mode='Markdown', reply_markup=types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("🔙 Back", callback_data="back_main")))
-    except Exception as e:
-        bot.answer_callback_query(call.id, "Error getting configs")
+    config_message = "برای استفاده از کانفیگ ها از اپلیکیشن TgProx استفاده کنید"
+    bot.edit_message_text(config_message, call.message.chat.id, call.message.message_id, reply_markup=types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("🔙 Back", callback_data="back_main")))
 
 def status_callback(call):
     if call.from_user.id not in ADMIN_IDS:
@@ -248,19 +230,14 @@ def list_channels_callback(call):
 # Group commands
 @bot.message_handler(commands=['getconfig'])
 def get_config_command(message):
-    try:
-        configs = get_configs(1)
-        config_message = format_configs(configs)
-        bot.reply_to(message, config_message, parse_mode='Markdown')
-        logger.info(f"User {message.from_user.id} requested configs in {message.chat.type}")
-    except Exception as e:
-        bot.reply_to(message, "❌ Error getting configs")
-        logger.error(f"Error getting configs: {e}")
+    config_message = "برای استفاده از کانفیگ ها از اپلیکیشن TgProx استفاده کنید"
+    bot.reply_to(message, config_message)
+    logger.info(f"User {message.from_user.id} requested configs in {message.chat.type}")
 
 @bot.message_handler(commands=['getproxy'])
 def get_proxy_command(message):
     try:
-        proxies = get_proxies(10)
+        proxies = get_proxies(20)
         if not proxies:
             bot.reply_to(message, "No working proxies found.")
             return
