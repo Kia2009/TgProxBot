@@ -22,8 +22,8 @@ def get_proxies(limit=50):
     if not supabase:
         return []
     try:
-        response = supabase.table('proxies').select('*').limit(limit).execute()
-        return [row['proxy_url'] for row in response.data]
+        response = supabase.table('proxies').select('url').limit(limit).execute()
+        return [row['url'] for row in response.data]
     except Exception as e:
         print(f"Error fetching proxies: {e}")
         return []
@@ -32,8 +32,8 @@ def get_configs(limit=5):
     if not supabase:
         return []
     try:
-        response = supabase.table('configs').select('*').limit(limit).execute()
-        return [row['config_url'] for row in response.data]
+        response = supabase.table('configs').select('config').limit(limit).execute()
+        return [row['config'] for row in response.data]
     except Exception as e:
         print(f"Error fetching configs: {e}")
         return []
