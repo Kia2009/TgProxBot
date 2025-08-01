@@ -63,7 +63,7 @@ def format_proxy_links(proxies):
     if not proxies:
         return "No working proxies found."
     message = "🛡️ Proxies:\n"
-    for proxy in proxies[:20]:
+    for proxy in proxies:
         message += f"[پروکسی مهندس علایی]({proxy})\n"
     return message
 
@@ -149,14 +149,12 @@ def callback_query(call):
 
 def get_proxy_callback(call):
     try:
-        proxies = get_proxies(20)
+        proxies = get_proxies(10)  # 10 proxies for private callback
         if not proxies:
             bot.answer_callback_query(call.id, "No working proxies found.")
             return
-        proxy_text = "🛡️ Proxies:\n"
-        for proxy in proxies:
-            proxy_text += f"`{proxy}`\n"
-        bot.edit_message_text(proxy_text, call.message.chat.id, call.message.message_id, parse_mode='Markdown', reply_markup=types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("🔙 Back", callback_data="back_main")))
+        proxy_message = format_proxy_links(proxies)
+        bot.edit_message_text(proxy_message, call.message.chat.id, call.message.message_id, parse_mode='Markdown', reply_markup=types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("🔙 Back", callback_data="back_main")))
     except Exception as e:
         bot.answer_callback_query(call.id, "Error getting proxies")
 
@@ -237,19 +235,17 @@ def get_config_command(message):
 @bot.message_handler(commands=['getproxy'])
 def get_proxy_command(message):
     try:
-        proxies = get_proxies(20)
+        if message.chat.type == 'private':
+            proxies = get_proxies(10)  # 10 proxies for private
+        else:
+            proxies = get_proxies(20)  # 20 proxies for groups
+            
         if not proxies:
             bot.reply_to(message, "No working proxies found.")
             return
         
-        if message.chat.type == 'private':
-            proxy_text = "🛡️ Proxies:\n"
-            for proxy in proxies:
-                proxy_text += f"`{proxy}`\n"
-            bot.reply_to(message, proxy_text, parse_mode='Markdown')
-        else:
-            proxy_message = format_proxy_links(proxies)
-            bot.reply_to(message, proxy_message, parse_mode='Markdown')
+        proxy_message = format_proxy_links(proxies)
+        bot.reply_to(message, proxy_message, parse_mode='Markdown')
         
         logger.info(f"User {message.from_user.id} requested proxies in {message.chat.type}")
     except Exception as e:
