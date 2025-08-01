@@ -60,13 +60,10 @@ def write_settings(data):
 def format_configs(configs):
     if not configs:
         return "No working configs found."
-    # Take only first config and truncate to avoid text too long error
+    # Take only first config - no truncation needed for separate message
     config = configs[0] if configs else ""
     if config:
-        # Truncate config if too long (Telegram limit ~4096 chars)
-        if len(config) > 3000:
-            config = config[:3000] + "..."
-        return f"🔗 Config: `{config}`"
+        return f"🔗 Config:\n`{config}`"
     return "No working configs found."
 
 # Function to format proxy links
@@ -84,17 +81,22 @@ def send_updates():
         proxies = get_proxies(5)  # 5 proxy links for group
         configs = get_configs(1)   # 1 config for group
         proxy_message = format_proxy_links(proxies)
-        config_message = format_configs(configs)
         current_time = (datetime.now() + timedelta(hours=4)).strftime("%b-%d %H:%M")
-        full_message = f"📢 Update {current_time}\n\n{proxy_message}\n\n{config_message}"
+        proxy_full_message = f"📢 Update {current_time}\n\n{proxy_message}"
+        
         for group_id in GROUP_CHAT_IDS:
             try:
-                bot.send_message(chat_id=group_id, text=full_message, parse_mode='Markdown')
+                # Send proxies first
+                bot.send_message(chat_id=group_id, text=proxy_full_message, parse_mode='Markdown')
+                # Send config separately if available
+                if configs and configs[0]:
+                    config_message = f"🔗 Config:\n`{configs[0]}`"
+                    bot.send_message(chat_id=group_id, text=config_message, parse_mode='Markdown')
             except Exception as msg_error:
                 logger.error(f"Failed to send to group {group_id}: {msg_error}")
                 for admin_id in ADMIN_IDS:
                     try:
-                        bot.send_message(chat_id=admin_id, text=f"⚠️ Failed to send to group {group_id}. Here's the update:\n\n{full_message}")
+                        bot.send_message(chat_id=admin_id, text=f"⚠️ Failed to send to group {group_id}. Proxy message: {proxy_full_message}")
                         break
                     except:
                         continue
