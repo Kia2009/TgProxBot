@@ -14,7 +14,7 @@ from dotenv import load_dotenv # type: ignore
 # Load environment variables
 load_dotenv()
 BOT_TOKEN = os.environ["BOT_TOKEN"]
-GROUP_CHAT_ID = int(os.environ["GROUP_CHAT_ID"])
+GROUP_CHAT_IDS = [int(id.strip()) for id in os.environ["GROUP_CHAT_ID"].split(",")]
 ADMIN_IDS = [int(id) for id in os.environ["ADMIN_IDS"].split(",")]
 
 # Initialize logging
@@ -88,16 +88,17 @@ def send_updates():
         config_message = format_configs(configs)
         current_time = (datetime.now() + timedelta(hours=4)).strftime("%b-%d %H:%M")
         full_message = f"📢 Update {current_time}\n\n{proxy_message}\n\n{config_message}"
-        try:
-            bot.send_message(chat_id=GROUP_CHAT_ID, text=full_message, parse_mode='Markdown')
-        except Exception as msg_error:
-            logger.error(f"Failed to send to group {GROUP_CHAT_ID}: {msg_error}")
-            for admin_id in ADMIN_IDS:
-                try:
-                    bot.send_message(chat_id=admin_id, text=f"⚠️ Failed to send to group. Here's the update:\n\n{full_message}")
-                    break
-                except:
-                    continue
+        for group_id in GROUP_CHAT_IDS:
+            try:
+                bot.send_message(chat_id=group_id, text=full_message, parse_mode='Markdown')
+            except Exception as msg_error:
+                logger.error(f"Failed to send to group {group_id}: {msg_error}")
+                for admin_id in ADMIN_IDS:
+                    try:
+                        bot.send_message(chat_id=admin_id, text=f"⚠️ Failed to send to group {group_id}. Here's the update:\n\n{full_message}")
+                        break
+                    except:
+                        continue
         logger.info(f"Sent update at {current_time} with {len(proxies)} proxies and {len(configs)} configs")
     except Exception as e:
         logger.error(f"Error sending update: {e}")
