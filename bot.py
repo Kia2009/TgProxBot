@@ -303,6 +303,10 @@ def logs_command(message):
 # Main function to start bot
 def main():
     logger.info("Bot started")
+    
+    # Send initial message to all groups
+    send_updates()
+    
     global scheduler_started
     scheduler.add_job(send_updates, "interval", minutes=30)
     threading.Thread(target=scheduler.start, daemon=True).start()
