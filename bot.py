@@ -277,6 +277,28 @@ def get_proxy_command(message):
         bot.reply_to(message, "❌ Error getting proxies")
         logger.error(f"Error getting proxies: {e}")
 
+@bot.message_handler(commands=['status'])
+@admin_only
+def status_command(message):
+    status = "running" if scheduler_started else "stopped"
+    last_update = scheduler.get_jobs()[0].next_run_time.strftime("%b-%d %H:%M") if scheduler_started and scheduler.get_jobs() else "N/A"
+    response = f"📊 Bot Status: {status}\nNext Update: {last_update}"
+    bot.reply_to(message, response)
+    logger.info(f"Admin {message.from_user.id} checked status")
+
+@bot.message_handler(commands=['logs'])
+@admin_only
+def logs_command(message):
+    try:
+        with open("logs/bot.log", "r", encoding="utf-8") as f:
+            lines = f.readlines()[-10:]
+        log_text = "".join(lines) or "No logs available."
+        bot.reply_to(message, f"📜 Recent Logs:\n```\n{log_text}\n```", parse_mode='Markdown')
+        logger.info(f"Admin {message.from_user.id} viewed logs")
+    except Exception as e:
+        bot.reply_to(message, f"❌ Error reading logs: {e}")
+        logger.error(f"Error reading logs: {e}")
+
 # Main function to start bot
 def main():
     logger.info("Bot started")
