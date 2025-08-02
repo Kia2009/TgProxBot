@@ -33,7 +33,12 @@ proxy_url = os.environ.get('TELEGRAM_PROXY', None)
 if proxy_url:
     telebot.apihelper.proxy = {'https': proxy_url}
 
-bot = telebot.TeleBot(BOT_TOKEN)
+try:
+    bot = telebot.TeleBot(BOT_TOKEN)
+    print("Bot initialized successfully")
+except Exception as e:
+    print(f"Failed to initialize bot: {e}")
+    exit(1)
 
 # Scheduler
 scheduler = BackgroundScheduler()
@@ -278,35 +283,49 @@ def logs_command(message):
 
 # Main function to start bot
 def main():
+    print("Bot starting...")
     logger.info("Bot started")
     
-    # Start health server
+    # Start health server first
     health_server = start_health_server()
-    logger.info("Health server started")
+    if not health_server:
+        print("Failed to start health server, exiting")
+        return
+    
+    # Wait a moment for health server to be ready
+    time.sleep(2)
+    print("Health server ready")
     
     global scheduler_started
-    scheduler.add_job(send_updates, "interval", minutes=30)
-    scheduler.start()
-    scheduler_started = True
+    try:
+        scheduler.add_job(send_updates, "interval", minutes=30)
+        scheduler.start()
+        scheduler_started = True
+        print("Scheduler started")
+    except Exception as e:
+        print(f"Scheduler error: {e}")
     
     # Send initial message to all groups
-    send_updates()
+    try:
+        send_updates()
+        print("Initial update sent")
+    except Exception as e:
+        print(f"Initial update failed: {e}")
     
     while True:
         try:
-            logger.info("Starting bot polling...")
-            print("Bot is ready and polling...")
+            print("Starting bot polling...")
             bot.polling(none_stop=True, interval=1, timeout=20)
         except KeyboardInterrupt:
-            logger.info("Received interrupt signal")
+            print("Received interrupt signal")
             break
         except Exception as e:
-            logger.error(f"Polling error: {e}")
-            logger.info("Restarting in 5 seconds...")
+            print(f"Polling error: {e}")
             time.sleep(5)
     
-    scheduler.shutdown()
-    logger.info("Bot stopped")
+    if scheduler_started:
+        scheduler.shutdown()
+    print("Bot stopped")
 
 if __name__ == "__main__":
     main()
