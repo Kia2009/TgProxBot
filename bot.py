@@ -4,12 +4,14 @@ import logging
 from logging.handlers import RotatingFileHandler
 import telebot # type: ignore
 from telebot import types # type: ignore
-from apscheduler.schedulers.blocking import BlockingScheduler # type: ignore
+from apscheduler.schedulers.background import BackgroundScheduler # type: ignore
 from supabase_db import get_proxies
 from base64 import b64encode
 from datetime import datetime, timedelta
 import threading
+import time
 from dotenv import load_dotenv # type: ignore
+from health_server import start_health_server
 
 # Load environment variables
 load_dotenv()
@@ -34,7 +36,7 @@ if proxy_url:
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # Scheduler
-scheduler = BlockingScheduler()
+scheduler = BackgroundScheduler()
 scheduler_started = False
 
 # Admin check decorator
@@ -197,7 +199,7 @@ def start_scheduler_callback(call):
     if not scheduler_started:
         scheduler.add_job(send_updates, "interval", minutes=30)
         if not scheduler.running:
-            threading.Thread(target=scheduler.start, daemon=True).start()
+            scheduler.start()
         scheduler_started = True
         bot.answer_callback_query(call.id, "✅ Scheduler started (30 min intervals)")
     else:
@@ -278,22 +280,32 @@ def logs_command(message):
 def main():
     logger.info("Bot started")
     
+    # Start health server
+    health_server = start_health_server()
+    logger.info("Health server started on port 8080")
+    
     global scheduler_started
     scheduler.add_job(send_updates, "interval", minutes=30)
-    threading.Thread(target=scheduler.start, daemon=True).start()
+    scheduler.start()
     scheduler_started = True
     
     # Send initial message to all groups
     send_updates()
     
-    try:
-        bot.polling(none_stop=True, interval=1, timeout=20)
-    except KeyboardInterrupt:
-        scheduler.shutdown()
-        logger.info("Bot stopped")
-    except Exception as e:
-        logger.error(f"Polling error: {e}")
-        scheduler.shutdown()
+    while True:
+        try:
+            logger.info("Starting bot polling...")
+            bot.polling(none_stop=True, interval=1, timeout=20)
+        except KeyboardInterrupt:
+            logger.info("Received interrupt signal")
+            break
+        except Exception as e:
+            logger.error(f"Polling error: {e}")
+            logger.info("Restarting in 5 seconds...")
+            time.sleep(5)
+    
+    scheduler.shutdown()
+    logger.info("Bot stopped")
 
 if __name__ == "__main__":
     main()
