@@ -15,10 +15,12 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     
     # Set PORT environment variable for Koyeb
-    os.environ.setdefault('PORT', '8080')
+    port = os.environ.get('PORT', '8080')
+    print(f"Starting application on port {port}")
     
     try:
         main()
     except Exception as e:
+        print(f"Fatal error: {e}")
         logging.error(f"Fatal error: {e}")
         sys.exit(1)

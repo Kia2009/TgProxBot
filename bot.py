@@ -282,7 +282,7 @@ def main():
     
     # Start health server
     health_server = start_health_server()
-    logger.info("Health server started on port 8080")
+    logger.info("Health server started")
     
     global scheduler_started
     scheduler.add_job(send_updates, "interval", minutes=30)
@@ -295,6 +295,7 @@ def main():
     while True:
         try:
             logger.info("Starting bot polling...")
+            print("Bot is ready and polling...")
             bot.polling(none_stop=True, interval=1, timeout=20)
         except KeyboardInterrupt:
             logger.info("Received interrupt signal")
