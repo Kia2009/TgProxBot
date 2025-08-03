@@ -11,7 +11,6 @@ from datetime import datetime, timedelta
 import threading
 import time
 from dotenv import load_dotenv # type: ignore
-from health_server import start_health_server
 
 # Load environment variables
 load_dotenv()
@@ -285,16 +284,6 @@ def logs_command(message):
 def main():
     print("Bot starting...")
     logger.info("Bot started")
-    
-    # Start health server first
-    health_server = start_health_server()
-    if not health_server:
-        print("Failed to start health server, exiting")
-        return
-    
-    # Wait a moment for health server to be ready
-    time.sleep(2)
-    print("Health server ready")
     
     global scheduler_started
     try:
